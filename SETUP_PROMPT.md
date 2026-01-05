@@ -2,6 +2,12 @@
 
 You are setting up the OpenCode Orchestrator system in the user's current project. Follow these steps carefully and in order.
 
+**IMPORTANT: Context Management**
+
+- For analysis-heavy tasks, use the Task tool to launch async agents
+- This keeps the main context clean and allows parallel investigation
+- Only bring back summaries, not raw findings
+
 ---
 
 ## Phase 1: Pre-flight Checks
@@ -48,293 +54,363 @@ Run these commands:
 ```bash
 git clone https://github.com/LyricalString/opencode-orchestrator-template.git /tmp/orc-template
 cp -r /tmp/orc-template/.opencode ./
-cp /tmp/orc-template/AGENTS.md ./
 rm -rf /tmp/orc-template
 ```
+
+**Note:** Do NOT copy AGENTS.md yet - we'll handle it in Phase 5.
 
 ### Step 2.2: Verify Copy
 
 ```bash
-ls .opencode/agent/ .opencode/command/ AGENTS.md
+ls .opencode/agent/ .opencode/command/
 ```
 
 Confirm files exist before proceeding.
 
 ---
 
-## Phase 3: Analyze Project
+## Phase 2.5: Read Existing Documentation
+
+**USE ASYNC AGENT** - Launch a Task agent to read documentation without bloating main context.
+
+```
+Task: Documentation Discovery Agent
+
+Read and summarize the project's existing documentation. Check for:
+- README.md - Project overview
+- CONTRIBUTING.md - Contribution guidelines
+- AGENTS.md - Existing agent instructions (IMPORTANT)
+- docs/ or documentation/ directory
+- ARCHITECTURE.md, ADR/, DESIGN.md
+- Any .md files in root that look relevant
+
+Return a structured summary:
+{
+  "files_found": ["list of doc files"],
+  "project_description": "1-2 sentences",
+  "key_conventions": ["bullet points"],
+  "existing_agents_md": true/false,
+  "existing_agents_md_sections": ["list section headers if exists"],
+  "architecture_notes": ["important patterns or systems mentioned"]
+}
+
+Keep the summary concise - we'll use it to inform agent generation.
+```
+
+### Step 2.5.2: Present Documentation Findings
+
+After the agent returns, tell the user:
+
+```
+## 📚 Existing Documentation Found
+
+| File | Summary |
+|------|---------|
+[list each doc found with 1-line summary]
+
+### Key Insights:
+[bullet points from agent's findings]
+
+### Existing AGENTS.md: [Yes/No]
+[If yes: "I found existing coding guidelines. I'll propose merging with orchestrator additions later."]
+
+Does this capture the important context? Anything I should know that isn't documented?
+```
+
+**Wait for user input** - they may add context not in docs.
+
+---
+
+## Phase 3: Analyze Project Structure
+
+**USE ASYNC AGENTS** - Launch parallel Task agents for analysis.
 
 Tell the user:
 
 ```
-🔍 Analyzing your project structure...
+🔍 Analyzing your project structure with parallel agents...
 ```
 
-### Step 3.1: Launch Parallel Analysis
+### Step 3.1: Launch Parallel Analysis Agents
 
-Launch 4 parallel investigation agents:
+Launch these agents IN PARALLEL using multiple Task calls in a single message:
 
-**Agent 1 - Root & Config:**
-
-- Check for monorepo: turbo.json, nx.json, lerna.json, pnpm-workspace.yaml, package.json "workspaces"
-- Identify package manager: bun.lockb → bun, pnpm-lock.yaml → pnpm, yarn.lock → yarn, package-lock.json → npm
-- Read root package.json: scripts (test, lint, build, type-check), workspaces patterns
-- Return: { package_manager, is_monorepo, monorepo_tool, scripts, workspace_scope }
-
-**Agent 2 - Apps Discovery:**
-
-- Scan: apps/_, packages/_, services/\*, src/
-- For each directory with package.json, extract:
-  - path, name, framework (from deps: next→Next.js, expo→Expo, express→Express, etc.)
-  - purpose (from description or infer from name)
-- Return: array of { path, name, framework, purpose }
-
-**Agent 3 - Database:**
-
-- Check folders: supabase/, prisma/, drizzle/
-- Check deps: @supabase/supabase-js, prisma, drizzle-orm
-- Return: { type: "supabase"|"prisma"|"drizzle"|null, migrations_path, config_file }
-
-**Agent 4 - Patterns:**
-
-- Auth: @clerk/_, next-auth, @auth0/_, @supabase/auth-helpers
-- State: zustand, @reduxjs/toolkit, jotai, @tanstack/react-query
-- Styling: tailwindcss, styled-components, @emotion/\*
-- Testing: jest, vitest, @playwright/test
-- Return: { auth, state_management, styling, testing }
-
-### Step 3.2: Present Findings
-
-Show the user:
+**Task 1 - Project Type & Stack Agent:**
 
 ```
-## 📊 Project Analysis Complete
+Analyze the project root to determine:
 
-| Category | Detected |
-|----------|----------|
-| Package Manager | [bun/pnpm/npm/yarn] |
-| Monorepo | [Yes (Turborepo) / No] |
-| Apps Found | [count] |
-| Database | [Supabase/Prisma/Drizzle/None] |
-| Auth | [Clerk/NextAuth/Auth0/None] |
-| State | [React Query + Zustand / etc.] |
-| Testing | [Jest/Vitest/None] |
+1. Project Type: Check for monorepo indicators (turbo.json, nx.json, lerna.json, pnpm-workspace.yaml, package.json "workspaces", Cargo.toml workspace, go.work)
 
-### Apps/Packages Detected:
+2. Language & Framework: Primary language(s) and framework(s)
 
-| Name | Path | Framework |
-|------|------|-----------|
-[list each app]
+3. Package Manager: Detect from lockfiles (bun.lockb, pnpm-lock.yaml, yarn.lock, package-lock.json, poetry.lock, Cargo.lock, go.sum)
 
-Does this look correct? (yes/no/let me correct something)
+4. Key Scripts: Read build/test/lint/dev commands from package.json, Makefile, pyproject.toml, etc.
+
+Return JSON:
+{
+  "is_monorepo": boolean,
+  "monorepo_tool": "turbo|nx|lerna|pnpm|cargo|go|null",
+  "languages": ["typescript", "python", etc],
+  "frameworks": ["nextjs", "express", etc],
+  "package_manager": "bun|pnpm|npm|yarn|poetry|cargo|go",
+  "scripts": { "build": "...", "test": "...", "lint": "...", "dev": "..." }
+}
+```
+
+**Task 2 - Apps & Packages Discovery Agent:**
+
+```
+Find all apps and packages in this project.
+
+Scan: apps/, packages/, services/, src/, lib/, cmd/, internal/
+
+For each directory with a manifest file (package.json, Cargo.toml, pyproject.toml, go.mod), extract:
+- path: relative path
+- name: from manifest
+- framework: infer from dependencies
+- purpose: from description or infer from name/structure
+
+Return JSON array:
+[{ "path": "...", "name": "...", "framework": "...", "purpose": "..." }]
+```
+
+**Task 3 - Database & Services Agent:**
+
+```
+Detect database and external service integrations.
+
+Database: Check for supabase/, prisma/, drizzle/, sqlalchemy, diesel, gorm
+External: Look for Stripe, S3/R2, SendGrid/Resend, auth providers
+
+Return JSON:
+{
+  "database": { "type": "postgres|mysql|sqlite|mongo|null", "orm": "prisma|drizzle|sqlalchemy|null", "migrations_path": "..." },
+  "auth": "clerk|next-auth|auth0|better-auth|passport|null",
+  "services": ["stripe", "s3", "resend", ...]
+}
+```
+
+**Task 4 - Testing & Quality Agent:**
+
+```
+Detect testing and quality tools.
+
+Check for: jest, vitest, pytest, cargo test, go test, playwright, cypress
+Linting: eslint, biome, ruff, clippy, golangci-lint
+CI/CD: .github/workflows/, .gitlab-ci.yml, vercel.json
+
+Return JSON:
+{
+  "test_framework": "jest|vitest|pytest|cargo|go|null",
+  "linter": "eslint|biome|ruff|clippy|null",
+  "ci_cd": "github-actions|gitlab|vercel|null"
+}
+```
+
+### Step 3.2: Synthesize Findings
+
+After all agents return, combine their findings and determine agent strategy:
+
+**For Monorepos:** Use app-based agents (one per app/package)
+
+**For Single-App Projects:** Use domain-based agents. Launch another async agent:
+
+```
+Task: Domain Analysis Agent
+
+Scan source directories for distinct specialist domains.
+
+Score each potential domain:
+| Signal | Points |
+|--------|--------|
+| File count > 10 | +2 |
+| Has own tests | +2 |
+| Uses 3+ external packages | +2 |
+| Has own types/models | +1 |
+| Complex business logic | +1 |
+| Integrates external service | +2 |
+| Has own README | +2 |
+| Referenced from 5+ files | +1 |
+
+Return domains with score >= 4 as candidates for dedicated agents.
+
+JSON: [{ "name": "...", "path": "...", "score": N, "purpose": "..." }]
+```
+
+### Step 3.3: Present Analysis to User
+
+```
+## 🔍 Project Analysis Complete
+
+### Project Overview
+- **Type**: [Monorepo / Single-App]
+- **Language**: [Primary language(s)]
+- **Framework**: [Main framework(s)]
+- **Package Manager**: [detected]
+- **Database**: [type + ORM]
+
+### [If Monorepo] Apps Detected:
+| App | Path | Framework | Purpose |
+|-----|------|-----------|---------|
+[list each]
+
+### [If Single-App] Domains for Dedicated Agents:
+| Domain | Path | Score | Purpose |
+|--------|------|-------|---------|
+[domains with score >= 4]
+
+### Proposed Agent Structure:
+| Agent | Scope | Purpose |
+|-------|-------|---------|
+[list proposed agents]
+
+---
+
+Does this look correct? Any adjustments needed?
 ```
 
 **Wait for user confirmation before proceeding.**
 
-If user says something is wrong, ask for corrections and update your understanding.
+---
+
+## Phase 4: Handle AGENTS.md
+
+### If Existing AGENTS.md Found:
+
+Read both files and propose a merge:
+
+```
+## 📄 AGENTS.md Merge Proposal
+
+### Keep from your existing file:
+- [List sections to preserve]
+
+### Add from orchestrator template:
+- Orchestrator Workflow section
+- Agent Maintenance section
+
+### Update:
+- Commands → Your actual commands
+
+Does this merge approach work? (yes / suggest changes)
+```
+
+**Wait for confirmation.**
+
+### If No Existing AGENTS.md:
+
+Create one based on the template, customized with detected info.
 
 ---
 
-## Phase 4: Customize Template
+## Phase 5: Generate Agents
 
-### Step 4.1: Update AGENTS.md
-
-Read the current AGENTS.md and update:
-
-1. **Package manager**: Replace all `bun` with detected package manager if different
-2. **Workspace scope**: Replace `@myapp/*` with actual scope (e.g., `@acme/*`)
-3. **Commands**: Update test/lint/build/type-check with actual commands from package.json
-4. **Auth patterns**: Replace example auth code with patterns matching detected auth provider
-
-### Step 4.2: Update Orchestrator
+### Step 5.1: Update Orchestrator
 
 Edit `.opencode/agent/orchestrator.md`:
 
-1. **Replace the routing table** with actual apps:
+- Update routing table with actual agents
+- Update detection keywords
+- Update bash permissions for detected package manager
 
-```markdown
-| Agent        | Domain    | Use For                      |
-| ------------ | --------- | ---------------------------- |
-| `[app-name]` | `[path]/` | [purpose based on framework] |
+### Step 5.2: Generate Each Agent
+
+**USE ASYNC AGENTS** - For each agent to create, launch a Task agent:
+
+```
+Task: Generate [App Name] Agent
+
+Create agent definition for [path].
+
+Scan the directory and extract:
+- Accurate dependencies with versions
+- Actual directory structure
+- Patterns found in code
+- Available commands
+
+Write to: .opencode/agent/[name].md
+
+Use this structure:
+[include the agent template structure]
+
+Return: Confirmation that file was written with key details included.
 ```
 
-2. **Update detection keywords** based on actual app names and purposes
+Launch these in parallel for independent apps.
 
-### Step 4.3: Generate App Agents
+### Step 5.3: Clean Up
 
-For EACH app discovered:
-
-1. Create `.opencode/agent/[app-name].md` with:
-   - Correct description based on framework
-   - Actual path in scope
-   - Tech stack from package.json dependencies (with versions)
-   - Directory structure (actually scan it)
-   - Patterns found in that specific app
-   - Commands from that app's package.json
-
-2. Use this structure:
-
-````markdown
----
-description: [App name] [framework] specialist - [brief purpose]
-permission:
-  edit: allow
-  bash:
-    '[pkg-manager] run type-check': allow
-    '[pkg-manager] test*': allow
-    'cd [path] && [pkg-manager] *': allow
-    '*': ask
----
-
-# [App Name] Agent
-
-You are a specialist for **[App Name]** (`[path]/`). [Purpose description].
-
-## Scope
-
-- **Primary**: `[path]/`
-- **Shared**: `packages/` (when changes needed for this app)
-- **Cross-app**: ASK before touching other apps
-
-## Tech Stack
-
-| Technology | Version | Purpose |
-| ---------- | ------- | ------- |
-
-[from package.json]
-
-## Directory Structure
-
-[actual structure from scanning]
-
-## Key Patterns
-
-[patterns found in this app]
-
-## Commands
+Delete unused template agents:
 
 ```bash
-cd [path]
-[pkg-manager] dev
-[pkg-manager] build
-[pkg-manager] test
-[pkg-manager] lint
+rm .opencode/agent/web-app.md      # if not needed
+rm .opencode/agent/mobile-app.md   # if not needed
+rm .opencode/agent/admin-panel.md  # if not needed
+rm .opencode/agent/database.md     # if no database
 ```
-````
 
-## What This App Owns
+### Step 5.4: Write AGENTS.md
 
-[infer from purpose]
-
----
-
-## Keeping This Agent Updated
-
-Update this file when:
-
-- [ ] Dependencies change
-- [ ] Directory structure changes
-- [ ] New patterns introduced
-
-````
-
-### Step 4.4: Handle Database Agent
-
-**If database detected:**
-- Update `.opencode/agent/database.md` with correct type (Supabase/Prisma/Drizzle)
-- Update migration paths and commands
-
-**If NO database:**
-- Delete `.opencode/agent/database.md`
-
-### Step 4.5: Clean Up Example Agents
-
-Delete example agents that don't match real apps:
-```bash
-# Only delete if no matching app exists
-rm .opencode/agent/web-app.md      # if no Next.js web app
-rm .opencode/agent/mobile-app.md   # if no Expo app
-rm .opencode/agent/admin-panel.md  # if no admin app
-````
+Write the confirmed AGENTS.md.
 
 ---
 
-## Phase 5: Summary
+## Phase 6: Summary
 
-Present to the user:
-
-````
+```
 ## ✅ Setup Complete!
 
-### Files Created/Modified:
+### Project: [name]
+- **Type**: [Monorepo / Single-App]
+- **Language**: [language]
+- **Package Manager**: [pm]
 
-**AGENTS.md** - Updated with:
-- Package manager: [detected]
-- Workspace scope: [detected]
-- Your commands and conventions
+### Agents Generated:
+| Agent | File | Purpose |
+|-------|------|---------|
+[list each]
 
-**Agents Generated:**
-- `.opencode/agent/orchestrator.md` - Updated routing table
-[list each app agent created]
-[database.md if applicable]
-
-**Commands Available:**
-- `/client-feedback "..."` - Full 3-phase workflow
-- `/investigate "..."` - Read-only investigation
-- `/plan-fix` - Create implementation plan
-- `/implement` - Execute the plan
-- `/continue-plan FILE.md` - Resume interrupted work
-- `/generate-agent path/` - Add new app agent
-- `/update-agent name` - Update existing agent
+### Commands Available:
+| Command | Purpose |
+|---------|---------|
+| `/client-feedback "..."` | Full 3-phase workflow |
+| `/investigate "..."` | Read-only investigation |
+| `/plan-fix` | Create implementation plan |
+| `/implement` | Execute the plan |
+| `/continue-plan FILE.md` | Resume from PLAN file |
+| `/generate-agent path/` | Add new agent |
+| `/update-agent name` | Update existing agent |
 
 ---
 
-### ⚡ Next Steps:
+### ⚡ Test the Setup:
 
-1. **Restart your terminal** (required):
-   ```bash
-   source ~/.zshrc  # or source ~/.bashrc
-````
+/investigate "give me an overview of this project"
 
-2. **Test the setup:**
-
-   ```bash
-   opencode "/investigate 'give me an overview of this project'"
-   ```
-
-3. **Try the full workflow:**
-   ```bash
-   opencode "/client-feedback 'describe an issue or feature'"
-   ```
-
-## [If STASH_CREATED is true:]
-
+[If STASH_CREATED:]
 ### ⚠️ Don't Forget!
-
-You have stashed changes. Restore them with:
-
-```bash
 git stash pop
-```
-
 ```
 
 ---
 
 ## Error Handling
 
-- If git clone fails: Check internet connection, try again
-- If analysis fails: Report which part failed, offer to retry or continue with partial info
-- If user says analysis is wrong: Ask for corrections, update before generating
-- If file write fails: Report error, don't leave partial state
+| Error                        | Resolution                              |
+| ---------------------------- | --------------------------------------- |
+| Git clone fails              | Check internet, retry                   |
+| Analysis agent fails         | Report error, offer retry               |
+| User disagrees with analysis | Update based on feedback                |
+| File write fails             | Report error, don't leave partial state |
 
 ---
 
-## Important Notes
+## Key Principles
 
-- Always ask for confirmation before making changes
-- Be thorough in analysis - don't assume, discover
-- Generate agents based on ACTUAL project structure, not examples
-- Keep the orchestrator workflow and skill files unchanged - they're generic
-- Only customize: AGENTS.md, orchestrator.md routing table, and app-specific agents
-```
+1. **Use async agents for heavy analysis** - Keep main context clean
+2. **Documentation first** - Read existing docs before code analysis
+3. **Ask, don't assume** - Confirm with user before generating
+4. **Parallel when possible** - Launch independent analyses together
+5. **Return summaries, not raw data** - Agents should synthesize
