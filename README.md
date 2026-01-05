@@ -25,14 +25,40 @@ Fetch https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-temp
 
 ### Step 3: Follow the prompts
 
-The AI will:
+The AI will guide you through a multi-phase setup:
 
-1. Check your git status (offers to stash uncommitted changes)
-2. Download and copy the template files
-3. Analyze your project structure
-4. Show you what it found and ask for confirmation
-5. Generate customized agents for your apps
-6. Remind you to restart your terminal
+#### Phase 1: Pre-flight
+
+- Check git status (offers to stash uncommitted changes)
+- Download and copy template files
+
+#### Phase 2: Documentation Discovery
+
+- Scan for README, CONTRIBUTING, ARCHITECTURE, existing AGENTS.md
+- Present findings and ask for any additional context
+
+#### Phase 3: Project Analysis (4 parallel agents)
+
+- **Stack Agent**: Detect monorepo tools, languages, frameworks, package manager
+- **Apps Agent**: Find all apps/packages with their purpose
+- **Services Agent**: Detect database, auth, external integrations
+- **Quality Agent**: Find test frameworks, linters, CI/CD
+
+#### Phase 4: AGENTS.md
+
+- If you have one: Propose merge with orchestrator additions
+- If not: Generate one based on your conventions
+
+#### Phase 5: Agent Generation
+
+- Update orchestrator routing table
+- Generate specialized agent for each app (in parallel)
+- Clean up unused template agents
+
+#### Phase 6: Summary
+
+- Show what was created
+- Test command to verify setup
 
 ---
 
