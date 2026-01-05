@@ -86,6 +86,10 @@ Edit the files to match your project structure:
 
 # Resume interrupted work
 /continue-plan PLAN_FILE.md
+
+# Agent management
+/generate-agent apps/new-app       # Create new agent from directory
+/update-agent web-app              # Update existing agent definition
 ```
 
 ## File Structure
@@ -105,7 +109,9 @@ your-project/
     │   ├── investigate.md             # Phase 1 command
     │   ├── plan-fix.md                # Phase 2 command
     │   ├── implement.md               # Phase 3 command
-    │   └── continue-plan.md           # Resume command
+    │   ├── continue-plan.md           # Resume command
+    │   ├── generate-agent.md          # Create new agent from directory
+    │   └── update-agent.md            # Update existing agent definition
     └── skill/
         └── orchestrator-workflow/
             └── SKILL.md               # Detailed workflow protocol
@@ -224,6 +230,46 @@ Edit `.opencode/skill/orchestrator-workflow/SKILL.md` to:
 - Change quality gates
 - Modify agent coordination rules
 
+## Agent Maintenance
+
+Agent definitions must stay in sync with your codebase. The system includes built-in maintenance features:
+
+### Auto-Update Reminders
+
+Each agent file includes a checklist of triggers that should prompt an update:
+
+- Package version changes
+- Directory structure modifications
+- New patterns introduced
+- Key files added/removed
+
+### Generate New Agents
+
+When you add a new app or package:
+
+```bash
+/generate-agent apps/my-new-app
+```
+
+This launches parallel investigation agents to:
+
+1. Analyze `package.json` for tech stack
+2. Map directory structure
+3. Identify patterns (auth, data fetching, forms)
+4. Detect integrations and env vars
+
+Then generates a complete agent definition.
+
+### Update Existing Agents
+
+After significant changes to an app:
+
+```bash
+/update-agent web-app
+```
+
+This compares the current codebase against the documented agent and updates any outdated information.
+
 ## Best Practices
 
 1. **Always create a PLAN file** for complex tasks
@@ -232,6 +278,8 @@ Edit `.opencode/skill/orchestrator-workflow/SKILL.md` to:
 4. **Run type-check** only after ALL agents complete
 5. **Use parallel agents** when tasks are independent
 6. **Use sequential agents** when there are dependencies
+7. **Update agent definitions** after significant architectural changes
+8. **Run `/update-agent`** periodically to keep docs in sync
 
 ## Integration with Other Tools
 

@@ -160,3 +160,20 @@ bun run type-check
 - User dashboard and profile
 - Referral system (if applicable)
 - Public landing pages
+
+---
+
+## Keeping This Agent Updated
+
+**This agent definition must stay in sync with the codebase.**
+
+After completing significant changes to this app, update this file if:
+
+- [ ] Package versions changed in `package.json`
+- [ ] Directory structure was modified
+- [ ] New patterns were introduced (auth, data fetching, etc.)
+- [ ] Key files were added, removed, or renamed
+- [ ] New shared packages are being used
+- [ ] New environment variables were added
+
+To update, edit `.opencode/agent/web-app.md` with the new information.

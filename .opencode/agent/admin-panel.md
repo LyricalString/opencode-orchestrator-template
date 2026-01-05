@@ -202,3 +202,21 @@ bun run type-check
 - User/content CRUD
 - System settings management
 - CSV exports
+
+---
+
+## Keeping This Agent Updated
+
+**This agent definition must stay in sync with the codebase.**
+
+After completing significant changes to this app, update this file if:
+
+- [ ] Package versions changed in `package.json`
+- [ ] Directory structure was modified
+- [ ] New admin features were added
+- [ ] RBAC roles or permissions changed
+- [ ] Key files were added, removed, or renamed
+- [ ] New shared packages are being used
+- [ ] New environment variables were added
+
+To update, edit `.opencode/agent/admin-panel.md` with the new information.

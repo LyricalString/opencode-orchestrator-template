@@ -177,3 +177,21 @@ EXPO_PUBLIC_API_URL
 - Subscription checkout via PaymentSheet
 - Push notification display
 - User dashboard and settings
+
+---
+
+## Keeping This Agent Updated
+
+**This agent definition must stay in sync with the codebase.**
+
+After completing significant changes to this app, update this file if:
+
+- [ ] Package versions changed in `package.json` or `app.config.js`
+- [ ] Directory structure was modified
+- [ ] New patterns were introduced (navigation, data fetching, etc.)
+- [ ] Key files were added, removed, or renamed
+- [ ] New shared packages are being used
+- [ ] New environment variables were added
+- [ ] Expo SDK version was upgraded
+
+To update, edit `.opencode/agent/mobile-app.md` with the new information.

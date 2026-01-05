@@ -232,3 +232,20 @@ ALTER TYPE status_enum ADD VALUE IF NOT EXISTS 'new_value';
 - Business logic (TypeScript apps)
 - Frontend code
 - External API integrations
+
+---
+
+## Keeping This Agent Updated
+
+**This agent definition must stay in sync with the codebase.**
+
+After completing significant changes to the database, update this file if:
+
+- [ ] New tables were created
+- [ ] New enums were added or modified
+- [ ] RLS policy patterns changed
+- [ ] New storage buckets were configured
+- [ ] PostgreSQL extensions were added
+- [ ] Key migrations introduced new patterns
+
+To update, edit `.opencode/agent/database.md` with the new information.

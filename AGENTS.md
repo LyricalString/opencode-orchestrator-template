@@ -283,6 +283,47 @@ See `.opencode/skill/orchestrator-workflow/SKILL.md` for full protocol.
 
 ---
 
+## Agent & Documentation Maintenance
+
+### Keep Agent Definitions Updated
+
+Agent definition files (`.opencode/agent/*.md`) must stay in sync with the codebase. **After completing significant changes**, update the relevant agent file if:
+
+- Package versions changed (check `package.json`)
+- Directory structure changed
+- New patterns were introduced
+- Key files were added/removed/renamed
+- New shared packages were added
+
+**Trigger phrases** that should prompt an agent update:
+
+- "I upgraded [package] to version X"
+- "I restructured the [folder]"
+- "I added a new pattern for [X]"
+- "I created a new shared package"
+
+### Keep AGENTS.md Updated
+
+This file should be updated when:
+
+- New commands are added to the workflow
+- New shared packages are created
+- Authentication patterns change
+- New code conventions are adopted
+
+### Generate New Agents
+
+Use the `/generate-agent` command to create a new agent definition:
+
+```bash
+/generate-agent apps/new-app        # For an app
+/generate-agent packages/new-pkg    # For a package
+```
+
+This will analyze the directory and generate a complete agent definition.
+
+---
+
 ## Critical Reminders
 
 1. **Never** expose service role keys in client code
@@ -290,3 +331,4 @@ See `.opencode/skill/orchestrator-workflow/SKILL.md` for full protocol.
 3. **Always** test RLS policies locally before deploying
 4. **Always** use React Query for data fetching (not useEffect)
 5. **Always** validate with Zod schemas from shared packages
+6. **Always** update agent definitions after significant architectural changes
