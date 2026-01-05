@@ -182,13 +182,17 @@ Return JSON array:
 Detect database and external service integrations.
 
 Database: Check for supabase/, prisma/, drizzle/, sqlalchemy, diesel, gorm
-External: Look for Stripe, S3/R2, SendGrid/Resend, auth providers
+External: Look for Stripe, S3/R2, SendGrid/Resend, auth providers, LLM APIs
+
+IMPORTANT: Report integration TYPES, not specific configuration.
+- Good: "LLM for PDF extraction", "IMAP for email"
+- Bad: "google/gemini-2.0-flash-001", "imap.gmail.com:993"
 
 Return JSON:
 {
   "database": { "type": "postgres|mysql|sqlite|mongo|null", "orm": "prisma|drizzle|sqlalchemy|null", "migrations_path": "..." },
   "auth": "clerk|next-auth|auth0|better-auth|passport|null",
-  "services": ["stripe", "s3", "resend", ...]
+  "services": ["stripe", "s3", "resend", "llm", "imap", ...]
 }
 ```
 
@@ -325,15 +329,24 @@ Task: Generate [App Name] Agent
 Create agent definition for [path].
 
 Scan the directory and extract:
-- Accurate dependencies with versions
-- Actual directory structure
-- Patterns found in code
-- Available commands
+- Libraries/packages used (names from manifest, NOT pinned versions)
+- Directory structure and file organization
+- Coding patterns and conventions
+- Available commands from scripts
+
+**What to Include vs. Exclude:**
+
+| Include (helps route tasks)              | Exclude (look up during implementation)           |
+|------------------------------------------|---------------------------------------------------|
+| Libraries/packages used                  | Specific versions (they change frequently)        |
+| Directory structure                      | Function/class names (searchable when needed)     |
+| Coding patterns & conventions            | Config values (model names, API endpoints, env vars) |
+| Integration types ("uses LLM", "IMAP")   | Runtime configuration details                     |
+| File organization                        | Schema field names or DB column names             |
+
+IMPORTANT: Do NOT infer or guess specific values. If you don't find something in the code, don't include it. Never write plausible-sounding specifics that you haven't verified.
 
 Write to: .opencode/agent/[name].md
-
-Use this structure:
-[include the agent template structure]
 
 Return: Confirmation that file was written with key details included.
 ```
@@ -414,3 +427,4 @@ git stash pop
 3. **Ask, don't assume** - Confirm with user before generating
 4. **Parallel when possible** - Launch independent analyses together
 5. **Return summaries, not raw data** - Agents should synthesize
+6. **Patterns over specifics** - Agents describe conventions and structure, not implementation details that change or can be looked up. Never infer or guess specific values (model names, endpoints, versions) - only include what you verify in the code.

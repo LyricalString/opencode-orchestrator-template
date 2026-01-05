@@ -22,18 +22,19 @@ You are a specialist for the **Expo mobile app** (`apps/mobile-app/`). This is t
 
 ## Tech Stack
 
-| Technology           | Version | Purpose            |
-| -------------------- | ------- | ------------------ |
-| Expo SDK             | ~54.0.0 | Framework          |
-| React                | 19+     | UI                 |
-| React Native         | 0.81+   | Mobile             |
-| TypeScript           | ~5.9    | Type safety        |
-| TanStack React Query | ^5      | Data fetching      |
-| Zustand              | ^4      | Global state       |
-| Clerk Expo           | ^2      | Authentication     |
-| Stripe React Native  | 0.57+   | Payments           |
-| React Navigation     | ^6      | Navigation         |
-| expo-notifications   | ~0.32   | Push notifications |
+| Technology           | Purpose                      |
+| -------------------- | ---------------------------- |
+| Expo                 | React Native framework       |
+| React Native         | Mobile UI                    |
+| TypeScript           | Type safety                  |
+| TanStack React Query | Server state & data fetching |
+| Zustand              | Client-side global state     |
+| Clerk Expo           | Authentication               |
+| Stripe React Native  | Payments                     |
+| React Navigation     | Navigation                   |
+| expo-notifications   | Push notifications           |
+
+<!-- Check package.json for current versions -->
 
 ## Directory Structure
 
@@ -43,22 +44,14 @@ apps/mobile-app/
 ├── app.config.js              # Expo config
 ├── eas.json                   # EAS Build config
 └── src/
-    ├── components/            # Reusable UI
-    ├── config/
-    │   └── environment.ts     # Env var access
+    ├── components/            # Reusable UI components
+    ├── config/                # Environment and app config
     ├── contexts/              # React contexts
     ├── hooks/                 # Custom hooks
-    ├── navigation/
-    │   ├── AppNavigator.tsx   # Root + auth gates
-    │   ├── MainTabNavigator.tsx
-    │   └── AuthStack.tsx
-    ├── providers/
-    │   ├── ClerkProvider.tsx
-    │   ├── SupabaseProvider.tsx
-    │   ├── StripeProvider.tsx
-    │   └── ThemeProvider.tsx
+    ├── navigation/            # Navigator components (stacks, tabs)
+    ├── providers/             # Context providers (auth, theme, etc.)
     ├── screens/               # Screen components
-    └── services/              # API services
+    └── services/              # API and external services
 ```
 
 ## Provider Hierarchy
@@ -76,66 +69,49 @@ QueryClientProvider
 
 ### Authentication (Clerk + Supabase)
 
-```typescript
-// ClerkProvider wraps app
-const { userId, isSignedIn, getToken, signOut } = useAuth();
-
-// SupabaseProvider creates authenticated client
-const { supabase } = useSupabase();
-```
+- Clerk handles user authentication (sign in/up/out)
+- Supabase client is authenticated using Clerk tokens
+- Auth state available via hooks from providers
+- Check `src/providers/` for implementation details
 
 ### Data Fetching (React Query)
 
-```typescript
-// Query keys pattern
-const queryKeys = {
-  users: {
-    all: ['users'],
-    list: (filters) => ['users', 'list', filters],
-    detail: (id) => ['users', 'detail', id],
-  },
-};
+- All server data fetched via React Query hooks
+- Query keys follow hierarchical pattern: `[entity, scope, params]`
+- Custom hooks wrap queries with proper typing
+- Mutations use optimistic updates where appropriate
+- Check `src/hooks/` for query hook patterns
 
-// Hooks with optimistic updates
-const { data, isLoading } = useUsers(filters, pagination);
-const { mutate } = useUpdateUserMutation();
-```
+### Navigation (React Navigation)
 
-### Navigation (React Navigation v6)
-
-- Native Stack navigators for all stacks
-- Bottom Tab navigator with custom animated tab bar
-- Auth-gated routing in AppNavigator
+- Native Stack navigators for screen stacks
+- Bottom Tab navigator for main app sections
+- Auth-gated routing (unauthenticated users see auth screens)
+- Check `src/navigation/` for navigator structure
 
 ### Stripe Mobile
 
-```typescript
-const { initPaymentSheet, presentPaymentSheet } = useStripe();
-
-// Flow:
-// 1. createCheckout() -> PaymentSheetConfig
-// 2. initPaymentSheet(config)
-// 3. presentPaymentSheet() -> handle result
-```
+- Uses PaymentSheet for checkout flow
+- Flow: create intent on backend → init sheet → present → handle result
+- Check `src/providers/` and `src/services/` for implementation
 
 ### Push Notifications
 
-```typescript
-import { NotificationService } from '@/services/notification-service';
-
-// Register token
-await NotificationService.registerPushToken(supabase, token);
-```
+- expo-notifications for receiving/displaying notifications
+- Push tokens registered with backend on app start
+- Check `src/services/` for notification handling
 
 ## Shared Packages
 
-| Package                  | Usage                             |
-| ------------------------ | --------------------------------- |
-| `@myapp/auth-store`      | Auth state management             |
-| `@myapp/shared-types`    | Types, enums                      |
-| `@myapp/stripe-utils`    | `calculateDisplayAmount()`        |
-| `@myapp/supabase-client` | `createClerkSupabaseExpoClient()` |
-| `@myapp/theme-store`     | `useTheme()`                      |
+| Package                  | Purpose                       |
+| ------------------------ | ----------------------------- |
+| `@myapp/auth-store`      | Auth state management         |
+| `@myapp/shared-types`    | Shared types and constants    |
+| `@myapp/stripe-utils`    | Stripe helpers and formatting |
+| `@myapp/supabase-client` | Supabase client creation      |
+| `@myapp/theme-store`     | Theme state and hooks         |
+
+<!-- Replace @myapp with your actual package scope -->
 
 ## Commands
 
@@ -184,14 +160,19 @@ EXPO_PUBLIC_API_URL
 
 **This agent definition must stay in sync with the codebase.**
 
-After completing significant changes to this app, update this file if:
+Update this file when:
 
-- [ ] Package versions changed in `package.json` or `app.config.js`
-- [ ] Directory structure was modified
-- [ ] New patterns were introduced (navigation, data fetching, etc.)
-- [ ] Key files were added, removed, or renamed
-- [ ] New shared packages are being used
-- [ ] New environment variables were added
-- [ ] Expo SDK version was upgraded
+- Directory structure changes significantly
+- New architectural patterns are introduced
+- New shared packages are added or removed
+- New integrations are added (auth, payments, etc.)
 
-To update, edit `.opencode/agent/mobile-app.md` with the new information.
+**Do NOT include in this file:**
+
+- Version numbers (check package.json when needed)
+- Specific function/class/hook names (searchable in code)
+- Config values or API endpoints
+- Environment variable values (only list names)
+- Specific file names within directories (describe the pattern instead)
+
+**Keep focus on patterns and conventions, not implementation specifics.**

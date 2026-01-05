@@ -21,19 +21,18 @@ You are a specialist for the **Admin Panel** Next.js application (`apps/admin-pa
 
 ## Tech Stack
 
-| Technology           | Version | Purpose             |
-| -------------------- | ------- | ------------------- |
-| Next.js              | 15+     | App Router          |
-| React                | 19+     | UI                  |
-| TypeScript           | ^5      | Type safety         |
-| Tailwind CSS         | ^4      | Styling             |
-| Clerk                | ^6      | Auth (admin only)   |
-| TanStack React Query | ^5      | Data fetching       |
-| TanStack React Table | ^8      | Tables              |
-| react-hook-form      | ^7      | Forms               |
-| Zod                  | ^3      | Validation          |
-| Radix UI             | various | Headless components |
-| sonner               | ^2      | Toasts              |
+| Technology           | Purpose                        |
+| -------------------- | ------------------------------ |
+| Next.js (App Router) | Framework                      |
+| TypeScript           | Type safety                    |
+| Tailwind CSS         | Styling                        |
+| Clerk                | Auth (admin only)              |
+| TanStack React Query | Server state / data fetching   |
+| TanStack React Table | Data tables                    |
+| react-hook-form      | Form state management          |
+| Zod                  | Runtime validation             |
+| Radix UI             | Headless accessible components |
+| sonner               | Toast notifications            |
 
 ## Directory Structure
 
@@ -78,50 +77,53 @@ if (!['super_admin', 'admin'].includes(role)) {
 
 ### Service Role Client (BYPASSES RLS)
 
+The admin client uses Supabase service role to bypass RLS for admin operations.
+
 ```typescript
-// src/lib/supabase-admin.ts
+// Pattern: Server-only admin client
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseAdmin = createClient(
+// Create admin client with service role key (server-only!)
+export const adminClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-// Usage in API routes
-const { data, error } = await supabaseAdmin.from('users').update({ name }).eq('id', user_id);
 ```
 
-**CRITICAL**: Never expose `SUPABASE_SERVICE_ROLE_KEY` to client.
+**CRITICAL**: Never expose service role key to client code. Use `'server-only'` import.
 
 ### API Route Pattern
 
+All admin API routes follow this pattern:
+
+1. **Auth check** - Verify user is authenticated (middleware already verified admin role)
+2. **Validate input** - Parse request body with Zod schema
+3. **Execute** - Use admin client for database operations
+4. **Return response** - Consistent error/success format
+
 ```typescript
+// Pattern: Admin API route
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 import { z } from 'zod';
 
-const Schema = z.object({ id: z.string(), ... });
-
 export async function POST(req: NextRequest) {
-  // 1. Auth (middleware already verified admin)
+  // 1. Auth check
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // 2. Validate
+  // 2. Validate with Zod
   const body = await req.json();
-  const validation = Schema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ error: 'Invalid', details: validation.error.issues }, { status: 400 });
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json({ error: 'Invalid', details: result.error.issues }, { status: 400 });
   }
 
-  // 3. Execute with service role
-  const { data, error } = await supabaseAdmin
-    .from('table')
-    .update(validation.data)
-    .eq('id', validation.data.id);
+  // 3. Execute with admin client (bypasses RLS)
+  const { data, error } = await adminClient.from('...').update(result.data);
 
+  // 4. Return consistent response
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true, data });
 }
@@ -129,22 +131,29 @@ export async function POST(req: NextRequest) {
 
 ### React Query
 
+Use TanStack Query for all server state. Key patterns:
+
+- **Query keys**: Namespace with feature prefix (e.g., `['admin-users', filters]`)
+- **Error handling**: Throw in queryFn so React Query handles error state
+- **Cache invalidation**: Invalidate related queries on mutation success
+
 ```typescript
+// Pattern: Query with filters
 const { data, isLoading } = useQuery({
-  queryKey: ['admin-users', filters],
+  queryKey: ['feature-name', filters],
   queryFn: async () => {
-    const result = await adminUserService.getAllUsers(filters);
+    const result = await fetchData(filters);
     if (result.error) throw new Error(result.error);
-    return result.data!;
+    return result.data;
   },
 });
 
-// Mutations with cache invalidation
+// Pattern: Mutation with cache invalidation
 const mutation = useMutation({
-  mutationFn: async (data) => { ... },
+  mutationFn: updateData,
   onSuccess: () => {
     toast.success('Updated');
-    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    queryClient.invalidateQueries({ queryKey: ['feature-name'] });
   },
 });
 ```
@@ -163,12 +172,16 @@ const form = useForm({
 
 ## Shared Packages
 
-| Package                     | Usage                   |
-| --------------------------- | ----------------------- |
-| `@myapp/shared-types`       | Types, DTOs, enums      |
-| `@myapp/supabase-client`    | Admin service functions |
-| `@myapp/validation-schemas` | Zod schemas             |
-| `@myapp/stripe-utils`       | Stripe client           |
+Use workspace packages from `packages/` instead of duplicating code:
+
+| Package Type      | Purpose                           |
+| ----------------- | --------------------------------- |
+| `shared-types`    | Types, DTOs, constants            |
+| `supabase-client` | Database client utilities         |
+| `validation`      | Shared Zod schemas                |
+| `stripe-utils`    | Payment integration (server-only) |
+
+> Package names use your workspace scope (e.g., `@myapp/shared-types`). Check `package.json` for exact names.
 
 ## Commands
 
@@ -182,13 +195,15 @@ bun lint
 bun run type-check
 ```
 
-## Admin Features
+## Core Feature Areas
 
-| Feature  | Location    | Purpose                     |
-| -------- | ----------- | --------------------------- |
-| Users    | `/users`    | CRUD, subscriptions, export |
-| Content  | `/content`  | Create, edit, manage        |
-| Settings | `/settings` | System configuration        |
+The admin panel typically manages:
+
+- **Users** - CRUD operations, role management, exports
+- **Content** - Create, edit, publish content
+- **Settings** - System configuration
+
+> Actual routes and features will vary. Check `app/` directory for current routes.
 
 ## Security Reminders
 
@@ -209,14 +224,28 @@ bun run type-check
 
 **This agent definition must stay in sync with the codebase.**
 
-After completing significant changes to this app, update this file if:
+### When to Update
 
-- [ ] Package versions changed in `package.json`
-- [ ] Directory structure was modified
-- [ ] New admin features were added
-- [ ] RBAC roles or permissions changed
-- [ ] Key files were added, removed, or renamed
-- [ ] New shared packages are being used
-- [ ] New environment variables were added
+- Directory structure changes
+- New feature areas added
+- Auth/RBAC model changes
+- New shared packages adopted
+- Key patterns or conventions change
 
-To update, edit `.opencode/agent/admin-panel.md` with the new information.
+### What TO Include
+
+- Library/framework names (without versions)
+- Directory structure patterns
+- Coding conventions and patterns
+- Integration types (e.g., "uses Supabase for database")
+- Security requirements and constraints
+
+### What NOT to Include
+
+- Version numbers → Check `package.json`
+- Specific function/class names → Searchable in code
+- Config values or env var values → Check `.env.example`
+- Specific database table names → Check migrations or types
+- API endpoints → Discoverable from route structure
+
+**Rule: Patterns over specifics.** If it changes frequently or is easily discoverable, don't document it here.

@@ -54,9 +54,11 @@ grep -r "CREATE.*FUNCTION" supabase/migrations/ | head -20
 
 ## Project Configuration
 
-- **DB Version**: PostgreSQL 17
-- **Auth**: Clerk as third-party provider (uses `auth.jwt()->>'sub'` for user ID)
-- **Extensions**: uuid-ossp, postgis (if needed), pg_cron
+> **CUSTOMIZE THIS SECTION** for your project. Example:
+>
+> - **DB Version**: PostgreSQL 15+
+> - **Auth**: [Your auth provider] (e.g., Supabase Auth, Clerk, Auth0)
+> - **Extensions**: List enabled extensions (e.g., uuid-ossp, postgis, pg_cron)
 
 ## Migration Conventions
 
@@ -110,14 +112,20 @@ CREATE TRIGGER update_table_updated_at
 
 ## RLS Policy Patterns
 
-### Clerk Integration (CRITICAL)
+### Auth Integration Pattern
+
+Choose the appropriate pattern based on your auth provider:
 
 ```sql
--- CORRECT: Use auth.jwt()->>'sub' for Clerk user ID
+-- Option A: Supabase Auth (native)
+USING (user_id = auth.uid())
+
+-- Option B: Third-party auth (Clerk, Auth0, etc.) via JWT
 USING (user_id = auth.jwt()->>'sub')
 
--- WRONG: auth.uid() returns UUID, not Clerk text ID
--- WRONG: auth.jwt()->>'user_id' (wrong claim path)
+-- IMPORTANT: Match the user ID type in your schema
+-- auth.uid() returns UUID
+-- auth.jwt()->>'sub' returns TEXT
 ```
 
 ### Common Policy Patterns
@@ -127,7 +135,7 @@ USING (user_id = auth.jwt()->>'sub')
 ```sql
 CREATE POLICY "Users can view own records" ON table_name
   FOR SELECT TO authenticated
-  USING (user_id = auth.jwt()->>'sub');
+  USING (user_id = <auth_user_id>);  -- Use auth.uid() or auth.jwt()->>'sub'
 ```
 
 **Service role full access**:
@@ -138,12 +146,12 @@ CREATE POLICY "Service role full access" ON table_name
   USING (true) WITH CHECK (true);
 ```
 
-**Admin access** (requires is_admin function):
+**Admin/role-based access** (requires helper function):
 
 ```sql
 CREATE POLICY "Admin can manage all" ON table_name
   FOR ALL TO authenticated
-  USING (is_admin(auth.jwt()->>'sub'));
+  USING (has_role(<auth_user_id>, 'admin'));  -- Use your role-check function
 ```
 
 **Public read for published content**:
@@ -187,7 +195,7 @@ ALTER TABLE table_name ADD COLUMN deleted_at TIMESTAMPTZ;
 CREATE INDEX idx_table_not_deleted ON table_name(id) WHERE deleted_at IS NULL;
 
 -- Update RLS to exclude deleted
-USING (user_id = auth.jwt()->>'sub' AND deleted_at IS NULL)
+USING (user_id = <auth_user_id> AND deleted_at IS NULL)
 ```
 
 ### Enum Extension
@@ -197,18 +205,21 @@ USING (user_id = auth.jwt()->>'sub' AND deleted_at IS NULL)
 ALTER TYPE status_enum ADD VALUE IF NOT EXISTS 'new_value';
 ```
 
-### Admin Check Function
+### Role Check Function (Example Pattern)
 
 ```sql
-CREATE OR REPLACE FUNCTION is_admin(check_user_id TEXT)
+-- Adapt this pattern to your role structure
+CREATE OR REPLACE FUNCTION has_role(check_user_id TEXT, required_role TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (auth.jwt()->'metadata'->>'role') IN ('super_admin', 'admin')
-    OR EXISTS (
-      SELECT 1 FROM users
-      WHERE id = check_user_id
-      AND role IN ('super_admin', 'admin')
-    );
+  -- Option 1: Check JWT claims (if roles are in token)
+  RETURN (auth.jwt()->'metadata'->>'role') = required_role;
+
+  -- Option 2: Check database table (if roles stored in DB)
+  -- RETURN EXISTS (
+  --   SELECT 1 FROM user_roles
+  --   WHERE user_id = check_user_id AND role = required_role
+  -- );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
@@ -216,23 +227,23 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 ## Storage Bucket Patterns
 
 ```sql
--- Users can upload to their own folder
+-- Users can upload to their own folder (bucket_id and auth pattern are examples)
 CREATE POLICY "Users upload to own folder" ON storage.objects
 FOR INSERT TO authenticated WITH CHECK (
-  bucket_id = 'avatars'
-  AND auth.jwt()->>'sub' = (string_to_array(name, '/'))[1]
+  bucket_id = '<your_bucket>'
+  AND <auth_user_id> = (string_to_array(name, '/'))[1]
 );
 
 -- Users can read their own files
 CREATE POLICY "Users read own files" ON storage.objects
 FOR SELECT TO authenticated USING (
-  bucket_id = 'avatars'
-  AND auth.jwt()->>'sub' = (string_to_array(name, '/'))[1]
+  bucket_id = '<your_bucket>'
+  AND <auth_user_id> = (string_to_array(name, '/'))[1]
 );
 
 -- Public read for public buckets
 CREATE POLICY "Public read" ON storage.objects
-FOR SELECT USING (bucket_id = 'public-assets');
+FOR SELECT USING (bucket_id = '<public_bucket>');
 ```
 
 ## CLI Commands Reference

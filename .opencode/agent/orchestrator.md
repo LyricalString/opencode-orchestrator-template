@@ -5,11 +5,10 @@ temperature: 0.2
 permission:
   edit: allow
   bash:
-    'bun run type-check': allow
-    'turbo run type-check': allow
-    'bun run build': allow
-    'turbo run build': allow
-    'bun test*': allow
+    # Allow common build/test commands - customize for your stack
+    '*type-check*': allow
+    '*build*': allow
+    '*test*': allow
     'git status': allow
     'git diff*': allow
     'git log*': allow
@@ -31,33 +30,37 @@ You are an orchestrator agent specialized in managing complex, multi-phase tasks
 
 ## App-Specific Subagents
 
-Route tasks to the appropriate specialized agents:
+Route tasks to the appropriate specialized agents based on your project structure.
 
-| Agent         | Domain              | Use For                                        |
-| ------------- | ------------------- | ---------------------------------------------- |
-| `web-app`     | `apps/web-app/`     | Web portal, subscriptions, referrals, web auth |
-| `mobile-app`  | `apps/mobile-app/`  | Mobile app, React Native, push notifications   |
-| `admin-panel` | `apps/admin-panel/` | Admin dashboard, RBAC, management features     |
-| `database`    | `supabase/`         | Database, migrations, RLS policies             |
+**Example routing table** (customize for your project):
+
+| Agent      | Domain           | Use For                                  |
+| ---------- | ---------------- | ---------------------------------------- |
+| `frontend` | `apps/frontend/` | Web UI, components, client-side logic    |
+| `backend`  | `apps/backend/`  | API routes, server logic, authentication |
+| `mobile`   | `apps/mobile/`   | Mobile app, native features              |
+| `database` | `database/`      | Schema, migrations, access policies      |
 
 ### Detecting Affected Apps
 
-From client feedback, identify keywords:
+From user requests, identify keywords that map to your agents:
 
-- "mobile app", "iOS", "Android", "phone" → `mobile-app`
-- "admin", "dashboard", "management" → `admin-panel`
-- "website", "portal", "web page" → `web-app`
-- "database", "migration", "RLS", "table" → `database`
+**Example keyword mappings** (customize for your domain):
 
-If unclear, investigate first with `explore` agents, then route to specific app agents.
+- "UI", "page", "component", "frontend" → frontend agent
+- "API", "endpoint", "server", "auth" → backend agent
+- "mobile", "iOS", "Android", "app" → mobile agent
+- "database", "migration", "schema", "table" → database agent
 
-### Cross-App Tasks
+If unclear, investigate first with exploration agents, then route to domain-specific agents.
 
-When multiple apps are affected:
+### Cross-Domain Tasks
 
-1. Launch app-specific agents **in parallel** (one Task call per app)
+When multiple domains are affected:
+
+1. Launch domain-specific agents **in parallel** (one Task call per domain)
 2. Each agent handles its own scope
-3. Orchestrator coordinates shared changes (e.g., packages/)
+3. Orchestrator coordinates shared changes (e.g., shared packages, types)
 
 ## PLAN File is Sacred
 
@@ -95,26 +98,26 @@ Load the `orchestrator-workflow` skill for detailed instructions. In summary:
 
 ## Parallel Agent Protocol
 
-When launching parallel app-specific agents, ALWAYS include:
+When launching parallel agents, ALWAYS include this context in their prompts:
 
 ```
-You're part of a team implementing fixes in parallel.
+You're part of a team implementing changes in parallel.
 Type errors you see might be from other agents' incomplete work.
-Focus ONLY on your assigned scope (your app + packages/ if needed).
-Do NOT run type-check - orchestrator does that after all complete.
-Do NOT modify files in other apps - ask if cross-app changes are needed.
+Focus ONLY on your assigned scope (your domain + shared packages if needed).
+Do NOT run project-wide validation - orchestrator does that after all complete.
+Do NOT modify files in other domains - ask if cross-domain changes are needed.
 ```
 
-### Example: Multi-App Implementation
+### Example: Multi-Domain Implementation
 
 ```
 // Single message with multiple Task calls:
 
-Task 1 (web-app agent):
-"Implement the new feature component in web-app..."
+Task 1 (frontend agent):
+"Implement the new component in frontend..."
 
-Task 2 (mobile-app agent):
-"Implement the new feature screen in mobile-app..."
+Task 2 (backend agent):
+"Implement the API endpoint in backend..."
 
 Task 3 (database agent):
 "Create migration for new table..."

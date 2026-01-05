@@ -21,16 +21,18 @@ You are a specialist for the **Web App** Next.js application (`apps/web-app/`). 
 
 ## Tech Stack
 
-| Technology      | Version | Purpose               |
-| --------------- | ------- | --------------------- |
-| Next.js         | 15+     | App Router, Turbopack |
-| React           | 19+     | UI                    |
-| TypeScript      | ^5      | Type safety           |
-| Tailwind CSS    | ^3.4    | Styling               |
-| Clerk           | ^6      | Authentication        |
-| Stripe          | 13+     | Payments              |
-| react-hook-form | ^7      | Forms                 |
-| Zod             | ^3      | Validation            |
+| Technology      | Purpose                    |
+| --------------- | -------------------------- |
+| Next.js         | App Router, Server Actions |
+| React           | UI framework               |
+| TypeScript      | Type safety                |
+| Tailwind CSS    | Styling                    |
+| Clerk           | Authentication             |
+| Stripe          | Payments & subscriptions   |
+| react-hook-form | Form state management      |
+| Zod             | Schema validation          |
+
+> **Note:** Check `package.json` for current versions. This file documents patterns, not versions.
 
 ## Directory Structure
 
@@ -167,13 +169,17 @@ bun run type-check
 
 **This agent definition must stay in sync with the codebase.**
 
-After completing significant changes to this app, update this file if:
+Update this file when:
 
-- [ ] Package versions changed in `package.json`
 - [ ] Directory structure was modified
 - [ ] New patterns were introduced (auth, data fetching, etc.)
-- [ ] Key files were added, removed, or renamed
 - [ ] New shared packages are being used
-- [ ] New environment variables were added
 
-To update, edit `.opencode/agent/web-app.md` with the new information.
+**Do NOT include in this file:**
+
+- Specific version numbers (they change frequently - check package.json when needed)
+- Function/class names (searchable in code)
+- Config values (model names, API endpoints, env var values)
+- Schema field names or DB columns
+
+Keep focus on **patterns and conventions**, not implementation specifics.
