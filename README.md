@@ -54,43 +54,116 @@ This is a template for setting up an **orchestrated AI agent workflow** in your 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+---
 
-### 1. Copy the Template
+## Getting Started
 
-Copy the `.opencode/` folder and `AGENTS.md` to your project root:
+### For New Projects
+
+1. **Copy the template files** to your project root:
 
 ```bash
+# Clone or download this repo
+git clone https://github.com/LyricalString/opencode-orchestrator-template.git
+
+# Copy to your project
 cp -r opencode-orchestrator-template/.opencode your-project/
 cp opencode-orchestrator-template/AGENTS.md your-project/
 ```
 
-### 2. Customize for Your Project
+2. **Update AGENTS.md** with your project specifics:
+   - Package manager commands (bun, npm, pnpm)
+   - Your tech stack and conventions
+   - Import ordering rules
+   - Any project-specific patterns
 
-Edit the files to match your project structure:
-
-- **AGENTS.md**: Update with your tech stack, commands, and patterns
-- **`.opencode/agent/*.md`**: Create agents for your apps/domains
-- **`.opencode/skill/orchestrator-workflow/SKILL.md`**: Adjust the workflow if needed
-
-### 3. Use the Commands
+3. **Generate agents for your apps**:
 
 ```bash
-# Full workflow: investigate → plan → implement
-/client-feedback "paste feedback here"
-
-# Individual phases
-/investigate "task description"    # Phase 1 only
-/plan-fix                          # Phase 2 only
-/implement                         # Phase 3 only
-
-# Resume interrupted work
-/continue-plan PLAN_FILE.md
-
-# Agent management
-/generate-agent apps/new-app       # Create new agent from directory
-/update-agent web-app              # Update existing agent definition
+# In your AI assistant, run:
+/generate-agent apps/your-web-app
+/generate-agent apps/your-mobile-app
+/generate-agent packages/your-shared-package
 ```
+
+4. **Update the orchestrator** (`.opencode/agent/orchestrator.md`):
+   - Add your agents to the routing table
+   - Add detection keywords for each app
+
+5. **Start using the workflow**:
+
+```bash
+/client-feedback "user reports login is broken on mobile"
+```
+
+### For Existing Projects
+
+If you already have a codebase and want to add orchestration:
+
+1. **Copy the template** (same as above)
+
+2. **Audit your project structure**:
+   - List all apps: `ls apps/` or `ls packages/`
+   - Identify which need dedicated agents
+
+3. **Generate agents for each app/package**:
+
+```bash
+# The generate command will analyze and create agent definitions
+/generate-agent apps/frontend
+/generate-agent apps/backend
+/generate-agent apps/admin
+/generate-agent packages/shared-utils
+```
+
+4. **Review and refine generated agents**:
+   - Check that patterns are correctly identified
+   - Add any missing conventions
+   - Remove any incorrect assumptions
+
+5. **Customize AGENTS.md**:
+   - Copy patterns from your existing documentation
+   - Add your linting/testing commands
+   - Document your authentication patterns
+
+6. **Test with a small task**:
+
+```bash
+/investigate "understand how authentication works in this project"
+```
+
+### Minimal Setup (Quick Start)
+
+If you want the fastest possible setup:
+
+1. Copy `.opencode/` and `AGENTS.md`
+2. Delete the example agents (`web-app.md`, `mobile-app.md`, etc.)
+3. Keep only `orchestrator.md` and `database.md`
+4. Run `/generate-agent` for each of your apps
+5. Start using `/client-feedback`
+
+---
+
+## Commands Reference
+
+### Workflow Commands
+
+| Command                  | Description              | When to Use                     |
+| ------------------------ | ------------------------ | ------------------------------- |
+| `/client-feedback "..."` | Full 3-phase workflow    | Processing user/client feedback |
+| `/investigate "..."`     | Phase 1 only (read-only) | Understanding a problem         |
+| `/plan-fix`              | Phase 2 only             | Creating implementation plan    |
+| `/implement`             | Phase 3 only             | Executing approved plan         |
+| `/continue-plan FILE.md` | Resume from PLAN file    | Returning to interrupted work   |
+
+### Agent Management Commands
+
+| Command                       | Description                 | When to Use               |
+| ----------------------------- | --------------------------- | ------------------------- |
+| `/generate-agent path/to/app` | Create new agent definition | Adding a new app/package  |
+| `/update-agent agent-name`    | Sync agent with codebase    | After significant changes |
+
+---
 
 ## File Structure
 
@@ -116,6 +189,8 @@ your-project/
         └── orchestrator-workflow/
             └── SKILL.md               # Detailed workflow protocol
 ```
+
+---
 
 ## The PLAN File
 
@@ -166,6 +241,8 @@ Refactor authentication to use new provider...
 - 14:30 - Completed token refresh fix
 ```
 
+---
+
 ## Parallel vs Sequential Execution
 
 ### Use Parallel Agents When:
@@ -180,11 +257,51 @@ Refactor authentication to use new provider...
 - Shared package changes before apps consuming them
 - API changes in one app before another app calling it
 
+---
+
+## Agent Design Philosophy
+
+### What Goes IN an Agent Definition
+
+- **Scope**: What directories/files this agent owns
+- **Patterns**: How to do things (auth, data fetching, forms)
+- **Commands**: How to run tests, build, lint
+- **Key files**: Important entry points and configs
+- **Conventions**: Naming, structure, imports
+
+### What Stays OUT of Agent Definitions
+
+- **Specific data**: Table schemas, API endpoints, env values
+- **Volatile information**: Version numbers that change often
+- **Large lists**: Every file in a directory
+
+Instead, teach agents **where to find** information:
+
+```markdown
+## Where to Find Schema Information
+
+| Information Needed | Where to Look               |
+| ------------------ | --------------------------- |
+| Table definitions  | `supabase/migrations/*.sql` |
+| API endpoints      | `apps/api/src/routes/`      |
+| Environment vars   | `.env.example`              |
+```
+
+This approach scales to large codebases without constant agent updates.
+
+---
+
 ## Customization Guide
 
 ### Adding a New App Agent
 
-Create `.opencode/agent/your-app.md`:
+Option 1: **Generate automatically**
+
+```bash
+/generate-agent apps/your-app
+```
+
+Option 2: **Create manually** at `.opencode/agent/your-app.md`:
 
 ```markdown
 ---
@@ -230,6 +347,8 @@ Edit `.opencode/skill/orchestrator-workflow/SKILL.md` to:
 - Change quality gates
 - Modify agent coordination rules
 
+---
+
 ## Agent Maintenance
 
 Agent definitions must stay in sync with your codebase. The system includes built-in maintenance features:
@@ -270,6 +389,8 @@ After significant changes to an app:
 
 This compares the current codebase against the documented agent and updates any outdated information.
 
+---
+
 ## Best Practices
 
 1. **Always create a PLAN file** for complex tasks
@@ -280,14 +401,43 @@ This compares the current codebase against the documented agent and updates any 
 6. **Use sequential agents** when there are dependencies
 7. **Update agent definitions** after significant architectural changes
 8. **Run `/update-agent`** periodically to keep docs in sync
+9. **Keep agents focused on patterns**, not specific data
+10. **Teach agents where to look**, not what they'll find
+
+---
 
 ## Integration with Other Tools
 
 This template works with:
 
 - **OpenCode**: Native support via `.opencode/` folder
-- **Claude Code**: Can be adapted for Claude's agent system
-- **Cursor**: Can be adapted for Cursor's rules system
+- **Claude Code**: Can be adapted for Claude's agent system (use AGENTS.md + custom instructions)
+- **Cursor**: Can be adapted for Cursor's rules system (.cursorrules)
+
+---
+
+## Troubleshooting
+
+### "Agent doesn't know about my new feature"
+
+Run `/update-agent agent-name` to sync the agent with current codebase.
+
+### "Parallel agents are conflicting"
+
+Check if tasks have dependencies. Use sequential execution for:
+
+- Database changes before app code
+- Shared package changes before consuming apps
+
+### "PLAN file is out of sync"
+
+The orchestrator should update it automatically. If not, manually update the Progress Log section.
+
+### "Agent is making changes outside its scope"
+
+Check the agent's Scope section. Add explicit "ASK before touching" rules.
+
+---
 
 ## License
 
@@ -296,3 +446,7 @@ MIT - Feel free to use, modify, and share!
 ## Credits
 
 Created by [Alex Martinez](https://github.com/LyricalString) based on real-world experience orchestrating AI agents in production monorepos.
+
+## Contributing
+
+Found a bug or have an improvement? Open an issue or PR on [GitHub](https://github.com/LyricalString/opencode-orchestrator-template).
