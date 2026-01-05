@@ -56,91 +56,160 @@ This is a template for setting up an **orchestrated AI agent workflow** in your 
 
 ---
 
-## Getting Started
+## Prerequisites
 
-### For New Projects
+### Install OpenCode
 
-1. **Copy the template files** to your project root:
+This template requires [OpenCode](https://opencode.ai) - an AI-powered coding assistant that runs in your terminal.
 
 ```bash
-# Clone or download this repo
-git clone https://github.com/LyricalString/opencode-orchestrator-template.git
+# Install OpenCode (macOS/Linux)
+curl -fsSL https://opencode.ai/install.sh | sh
 
-# Copy to your project
-cp -r opencode-orchestrator-template/.opencode your-project/
-cp opencode-orchestrator-template/AGENTS.md your-project/
+# Or with Homebrew
+brew install opencode-ai/tap/opencode
+
+# Verify installation
+opencode --version
 ```
 
-2. **Update AGENTS.md** with your project specifics:
-   - Package manager commands (bun, npm, pnpm)
-   - Your tech stack and conventions
-   - Import ordering rules
-   - Any project-specific patterns
+> **Note**: OpenCode requires an API key. Get one at [opencode.ai](https://opencode.ai) and set it:
+>
+> ```bash
+> export OPENCODE_API_KEY="your-key-here"
+> ```
 
-3. **Generate agents for your apps**:
+---
+
+## Installation
+
+Choose your preferred installation method:
+
+### Option A: Automatic Setup (Recommended)
+
+Let AI analyze your project and set everything up automatically.
+
+**1. Download the setup command:**
 
 ```bash
-# In your AI assistant, run:
+# In your project root
+curl -fsSL https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/.opencode/command/setup.md \
+  -o .opencode/command/setup.md --create-dirs
+```
+
+**2. Run the setup wizard:**
+
+```bash
+opencode "/setup"
+```
+
+The wizard will:
+
+- ✅ Check for uncommitted changes (offers to stash)
+- ✅ Analyze your project structure
+- ✅ Detect your apps, packages, and tech stack
+- ✅ Generate customized agent definitions
+- ✅ Create all necessary files
+
+**3. Restart your terminal** and start using:
+
+```bash
+opencode "/client-feedback 'user reports login is broken'"
+```
+
+---
+
+### Option B: Manual Setup
+
+If you prefer to set things up yourself:
+
+**1. Clone and copy the template:**
+
+```bash
+# Clone the template
+git clone https://github.com/LyricalString/opencode-orchestrator-template.git /tmp/orchestrator-template
+
+# Copy to your project
+cp -r /tmp/orchestrator-template/.opencode your-project/
+cp /tmp/orchestrator-template/AGENTS.md your-project/
+
+# Clean up
+rm -rf /tmp/orchestrator-template
+```
+
+**2. Customize AGENTS.md:**
+
+Edit `AGENTS.md` with your project specifics:
+
+- Package manager (bun, npm, pnpm, yarn)
+- Your tech stack and conventions
+- Test/lint/build commands
+- Import ordering rules
+
+**3. Generate agents for your apps:**
+
+```bash
+# Start OpenCode
+opencode
+
+# Generate an agent for each app
 /generate-agent apps/your-web-app
 /generate-agent apps/your-mobile-app
 /generate-agent packages/your-shared-package
 ```
 
-4. **Update the orchestrator** (`.opencode/agent/orchestrator.md`):
-   - Add your agents to the routing table
-   - Add detection keywords for each app
+**4. Update the orchestrator:**
 
-5. **Start using the workflow**:
+Edit `.opencode/agent/orchestrator.md`:
 
-```bash
-/client-feedback "user reports login is broken on mobile"
-```
+- Add your agents to the routing table
+- Add detection keywords for each app
 
-### For Existing Projects
+**5. Restart your terminal** and start using the commands.
 
-If you already have a codebase and want to add orchestration:
+---
 
-1. **Copy the template** (same as above)
+### Option C: One-Line Install (Copy & Paste)
 
-2. **Audit your project structure**:
-   - List all apps: `ls apps/` or `ls packages/`
-   - Identify which need dedicated agents
-
-3. **Generate agents for each app/package**:
+For the fastest setup, copy this entire block into your terminal:
 
 ```bash
-# The generate command will analyze and create agent definitions
-/generate-agent apps/frontend
-/generate-agent apps/backend
-/generate-agent apps/admin
-/generate-agent packages/shared-utils
+cd your-project && \
+curl -fsSL https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/.opencode/command/setup.md \
+  -o .opencode/command/setup.md --create-dirs && \
+echo "Setup command installed. Run: opencode \"/setup\""
 ```
 
-4. **Review and refine generated agents**:
-   - Check that patterns are correctly identified
-   - Add any missing conventions
-   - Remove any incorrect assumptions
-
-5. **Customize AGENTS.md**:
-   - Copy patterns from your existing documentation
-   - Add your linting/testing commands
-   - Document your authentication patterns
-
-6. **Test with a small task**:
+Then run:
 
 ```bash
-/investigate "understand how authentication works in this project"
+opencode "/setup"
 ```
 
-### Minimal Setup (Quick Start)
+---
 
-If you want the fastest possible setup:
+## Post-Installation
 
-1. Copy `.opencode/` and `AGENTS.md`
-2. Delete the example agents (`web-app.md`, `mobile-app.md`, etc.)
-3. Keep only `orchestrator.md` and `database.md`
-4. Run `/generate-agent` for each of your apps
-5. Start using `/client-feedback`
+After installation completes:
+
+1. **Restart your terminal** (or run `source ~/.zshrc` / `source ~/.bashrc`)
+
+2. **Verify the setup:**
+
+   ```bash
+   ls .opencode/agent/  # Should show your generated agents
+   ```
+
+3. **Try your first command:**
+
+   ```bash
+   opencode "/investigate 'understand how authentication works'"
+   ```
+
+4. **If you stashed changes**, restore them:
+   ```bash
+   git stash pop
+   ```
 
 ---
 
@@ -158,14 +227,17 @@ If you want the fastest possible setup:
 
 ### Agent Management Commands
 
-| Command                       | Description                 | When to Use               |
-| ----------------------------- | --------------------------- | ------------------------- |
-| `/generate-agent path/to/app` | Create new agent definition | Adding a new app/package  |
-| `/update-agent agent-name`    | Sync agent with codebase    | After significant changes |
+| Command                       | Description                     | When to Use               |
+| ----------------------------- | ------------------------------- | ------------------------- |
+| `/setup`                      | Auto-configure for your project | Initial installation      |
+| `/generate-agent path/to/app` | Create new agent definition     | Adding a new app/package  |
+| `/update-agent agent-name`    | Sync agent with codebase        | After significant changes |
 
 ---
 
 ## File Structure
+
+After installation, your project will have:
 
 ```
 your-project/
@@ -173,18 +245,18 @@ your-project/
 └── .opencode/
     ├── agent/
     │   ├── orchestrator.md            # Main orchestrator agent
-    │   ├── web-app.md                 # Example: Web app specialist
-    │   ├── mobile-app.md              # Example: Mobile app specialist
-    │   ├── admin-panel.md             # Example: Admin panel specialist
-    │   └── database.md                # Example: Database specialist
+    │   ├── [your-app-1].md            # Generated for your first app
+    │   ├── [your-app-2].md            # Generated for your second app
+    │   └── database.md                # Database specialist (if detected)
     ├── command/
     │   ├── client-feedback.md         # Full workflow command
     │   ├── investigate.md             # Phase 1 command
     │   ├── plan-fix.md                # Phase 2 command
     │   ├── implement.md               # Phase 3 command
     │   ├── continue-plan.md           # Resume command
-    │   ├── generate-agent.md          # Create new agent from directory
-    │   └── update-agent.md            # Update existing agent definition
+    │   ├── setup.md                   # Setup wizard
+    │   ├── generate-agent.md          # Create new agent
+    │   └── update-agent.md            # Update existing agent
     └── skill/
         └── orchestrator-workflow/
             └── SKILL.md               # Detailed workflow protocol
@@ -406,17 +478,15 @@ This compares the current codebase against the documented agent and updates any 
 
 ---
 
-## Integration with Other Tools
-
-This template works with:
-
-- **OpenCode**: Native support via `.opencode/` folder
-- **Claude Code**: Can be adapted for Claude's agent system (use AGENTS.md + custom instructions)
-- **Cursor**: Can be adapted for Cursor's rules system (.cursorrules)
-
----
-
 ## Troubleshooting
+
+### "Command not found" after installation
+
+Restart your terminal or run:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
 
 ### "Agent doesn't know about my new feature"
 
@@ -436,6 +506,29 @@ The orchestrator should update it automatically. If not, manually update the Pro
 ### "Agent is making changes outside its scope"
 
 Check the agent's Scope section. Add explicit "ASK before touching" rules.
+
+### Setup failed with uncommitted changes
+
+The setup wizard will detect this and offer to stash. If you declined:
+
+```bash
+git stash push -m "Before orchestrator setup"
+opencode "/setup"
+git stash pop
+```
+
+---
+
+## Integration with Other Tools
+
+This template is designed for **OpenCode** but can be adapted:
+
+| Tool            | Adaptation                                                        |
+| --------------- | ----------------------------------------------------------------- |
+| **OpenCode**    | Native support (just copy files)                                  |
+| **Claude Code** | Use AGENTS.md as system prompt, adapt commands to Claude's format |
+| **Cursor**      | Convert agents to .cursorrules format                             |
+| **Aider**       | Use AGENTS.md as conventions file                                 |
 
 ---
 
