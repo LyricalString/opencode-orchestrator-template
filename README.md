@@ -11,7 +11,7 @@ A powerful multi-agent orchestration system for AI coding assistants. Handle com
 **From your project's root directory**, copy and run:
 
 ```bash
-opencode "Fetch https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/SETUP_PROMPT.md and follow those instructions to set up the orchestrator in my project"
+opencode run "Fetch https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/SETUP_PROMPT.md and follow those instructions to set up the orchestrator in my project"
 ```
 
 That's it. The AI will:
