@@ -8,13 +8,24 @@ A powerful multi-agent orchestration system for AI coding assistants. Handle com
 
 > **Requires**: [OpenCode](https://opencode.ai) installed in your terminal
 
-**From your project's root directory**, copy and run:
+### Step 1: Open OpenCode in your project
 
 ```bash
-opencode run "Fetch https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/SETUP_PROMPT.md and follow those instructions to set up the orchestrator in my project"
+cd your-project
+opencode
 ```
 
-That's it. The AI will:
+### Step 2: Send this message
+
+Copy and paste this into OpenCode:
+
+```
+Fetch https://raw.githubusercontent.com/LyricalString/opencode-orchestrator-template/main/SETUP_PROMPT.md and follow those instructions to set up the orchestrator in my project
+```
+
+### Step 3: Follow the prompts
+
+The AI will:
 
 1. Check your git status (offers to stash uncommitted changes)
 2. Download and copy the template files
@@ -61,6 +72,8 @@ An orchestrated workflow for AI coding assistants, designed for monorepos with m
 
 ## Commands
 
+After installation, these commands are available:
+
 | Command                  | Description              |
 | ------------------------ | ------------------------ |
 | `/client-feedback "..."` | Full 3-phase workflow    |
@@ -102,8 +115,8 @@ rm -rf /tmp/orc-template
 
 # Customize AGENTS.md with your conventions
 
-# Generate agents for your apps
-opencode "/generate-agent apps/your-app"
+# Generate agents for your apps (inside OpenCode)
+/generate-agent apps/your-app
 
 # Update orchestrator routing table
 # Edit .opencode/agent/orchestrator.md
@@ -122,8 +135,14 @@ rm .opencode/agent/admin-panel.md
 # Restart terminal (required)
 source ~/.zshrc
 
-# Test it
-opencode "/investigate 'overview of this project'"
+# Open OpenCode and test it
+opencode
+```
+
+Then send:
+
+```
+/investigate "overview of this project"
 ```
 
 ---
