@@ -96,6 +96,8 @@ Routes tasks to the right app-specific agents, coordinates parallel execution, m
 
 Each app gets a specialist agent that knows its tech stack, patterns, and conventions.
 
+> **Design principle**: Agents capture **patterns over specifics** - they document directory structures, coding conventions, and integration types, but NOT version numbers, function names, or config values. This prevents hallucination and keeps agents maintainable.
+
 ### PLAN File
 
 Tracks complex tasks across sessions. Leave and return anytime with `/continue-plan`.
