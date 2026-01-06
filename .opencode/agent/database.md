@@ -1,5 +1,6 @@
 ---
 description: Supabase specialist - database migrations, RLS policies, schema design, PostgreSQL
+mode: subagent
 permission:
   edit: allow
   bash:

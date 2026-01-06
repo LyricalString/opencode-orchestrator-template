@@ -1,5 +1,6 @@
 ---
 description: Expo React Native mobile app specialist - iOS/Android, Clerk Expo auth, Stripe mobile, push notifications
+mode: subagent
 permission:
   edit: allow
   bash:

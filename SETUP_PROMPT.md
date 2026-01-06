@@ -319,7 +319,41 @@ Edit `.opencode/agent/orchestrator.md`:
 - Update detection keywords
 - Update bash permissions for detected package manager
 
-### Step 5.2: Generate Each Agent
+### Step 5.2: Confirm Agent Visibility Mode
+
+Before generating agents, confirm with the user which agents should be directly accessible:
+
+```
+## 🎛️ Agent Visibility Configuration
+
+By default, all app-specific agents use `mode: subagent`:
+- They are NOT visible in the terminal agent selector
+- Only the orchestrator is visible to you
+- The orchestrator delegates to subagents automatically
+
+This simplifies your experience - you talk to orchestrator, it coordinates everything.
+
+### Proposed Configuration:
+
+| Agent        | Mode     | Visible to You? |
+|--------------|----------|-----------------|
+| orchestrator | primary  | ✅ Yes          |
+| web-app      | subagent | ❌ No (via orchestrator) |
+| mobile-app   | subagent | ❌ No (via orchestrator) |
+| admin-panel  | subagent | ❌ No (via orchestrator) |
+| database     | subagent | ❌ No (via orchestrator) |
+
+Would you like any agent to be directly accessible (not just via orchestrator)?
+- Enter agent names to make visible, or
+- Press Enter to keep defaults (recommended)
+```
+
+**If user specifies agents to make visible:**
+
+- Remove `mode: subagent` from those agents (they become directly selectable)
+- Keep `mode: subagent` on the rest
+
+### Step 5.3: Generate Each Agent
 
 **USE ASYNC AGENTS** - For each agent to create, launch a Task agent:
 
@@ -344,6 +378,10 @@ Scan the directory and extract:
 | Integration types ("uses LLM", "IMAP")   | Runtime configuration details                     |
 | File organization                        | Schema field names or DB column names             |
 
+**Agent Mode:**
+- Add `mode: subagent` to the frontmatter (unless user requested this agent be visible)
+- This makes the agent only accessible via orchestrator delegation
+
 IMPORTANT: Do NOT infer or guess specific values. If you don't find something in the code, don't include it. Never write plausible-sounding specifics that you haven't verified.
 
 Write to: .opencode/agent/[name].md
@@ -353,7 +391,7 @@ Return: Confirmation that file was written with key details included.
 
 Launch these in parallel for independent apps.
 
-### Step 5.3: Clean Up
+### Step 5.4: Clean Up
 
 Delete unused template agents:
 
@@ -364,7 +402,7 @@ rm .opencode/agent/admin-panel.md  # if not needed
 rm .opencode/agent/database.md     # if no database
 ```
 
-### Step 5.4: Write AGENTS.md
+### Step 5.5: Write AGENTS.md
 
 Write the confirmed AGENTS.md.
 

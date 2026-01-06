@@ -185,12 +185,14 @@ Return:
 
 **App-Specific Agents:**
 
-| Agent         | Scope                             |
-| ------------- | --------------------------------- |
-| `web-app`     | `apps/web-app/` + `packages/`     |
-| `mobile-app`  | `apps/mobile-app/` + `packages/`  |
-| `admin-panel` | `apps/admin-panel/` + `packages/` |
-| `database`    | `supabase/`                       |
+| Agent         | Scope                             | Mode     |
+| ------------- | --------------------------------- | -------- |
+| `web-app`     | `apps/web-app/` + `packages/`     | subagent |
+| `mobile-app`  | `apps/mobile-app/` + `packages/`  | subagent |
+| `admin-panel` | `apps/admin-panel/` + `packages/` | subagent |
+| `database`    | `supabase/`                       | subagent |
+
+> **Note:** All app-specific agents use `mode: subagent`, meaning they are NOT available directly to the user in the terminal selector. Only the orchestrator (with `mode: primary`) is visible. The orchestrator delegates to subagents via the Task tool. This abstracts complexity - users talk to orchestrator, orchestrator coordinates everything.
 
 **Parallel App Agent Template:**
 

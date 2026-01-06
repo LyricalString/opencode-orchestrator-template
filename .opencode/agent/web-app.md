@@ -1,5 +1,6 @@
 ---
 description: Web App Next.js specialist - member portal, Stripe subscriptions, referral system, Clerk auth
+mode: subagent
 permission:
   edit: allow
   bash:

@@ -1,5 +1,6 @@
 ---
 description: Admin Panel Next.js app specialist - super_admin RBAC, user/content management
+mode: subagent
 permission:
   edit: allow
   bash:
